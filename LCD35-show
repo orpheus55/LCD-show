@@ -1,3 +1,14 @@
+ORIG_COPY_PREFIX=".wsorig"
+
+function prepareFileAction {
+	if test -f "$1"; then
+		echo "Replacing '$1' (after creating backup '$1$ORIG_COPY_PREFIX')..."
+		sudo cp -pi "$1" "$1$ORIG_COPY_PREFIX"
+	else
+		echo "Creating '$1'..."
+	fi
+}
+
 i=1
 for lines in `cat ./boot/mark`
 do
@@ -13,6 +24,7 @@ if test "$var1" = "0"  -a "$1" != "lite" -a "$2" != "lite";then
 
 if test "$j" != "retropie" ;then
 sudo apt-get install xserver-xorg-input-evdev
+prepareFileAction "/usr/share/X11/xorg.conf.d/45-evdev.conf"
 sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf
 fi
 
@@ -38,7 +50,9 @@ sudo mkdir -p /usr/share/X11/xorg.conf.d
 
 fi
 
+prepareFileAction "/usr/share/X11/xorg.conf.d/99-fbturbo.conf"
 if test "$j" != "kali" ;then
+prepareFileAction "/etc/rc.local"
 if test "$1" != "lite" -a "$2" != "lite" ;then
 sudo cp -rf ./etc/rc.local-gpio /etc/rc.local
 sudo cp -rf ./usr/share/X11/xorg.conf.d/99-fbturbo.conf-HDMI  /usr/share/X11/xorg.conf.d/99-fbturbo.conf
@@ -51,6 +65,8 @@ sudo cp ./usr/share/X11/xorg.conf.d/99-fbturbo.conf-kali /usr/share/X11/xorg.con
 fi
 
 
+prepareFileAction "/usr/share/X11/xorg.conf.d/99-calibration.conf"
+prepareFileAction "/boot/config.txt"
 if test "$1" = "0" -o "$#" = "0" -o "$2" = "0";then
 	sudo cp -rf ./etc/X11/xorg.conf.d/99-calibration.conf-35  /usr/share/X11/xorg.conf.d/99-calibration.conf
 	sudo cp ./boot/config-35.txt /boot/config.txt
@@ -91,17 +107,25 @@ fi
 sudo cp ./waveshare35a-overlay.dtb /boot/overlays/waveshare35a.dtbo
 sudo cp ./waveshare35a-overlay.dtb /boot/overlays/
 #sudo cp -rf ./usr/share/X11/xorg.conf.d/99-fbturbo.conf  /usr/share/X11/xorg.conf.d/
+prepareFileAction "/boot/cmdline.txt"
 if [ -b /dev/mmcblk0p7 ]; then
 sudo cp ./cmdline.txt-noobs /boot/cmdline.txt
 else
 sudo cp ./cmdline.txt /boot/
 fi
 
+prepareFileAction "/etc/inittab"
 sudo cp ./inittab /etc/
 
 if test "$#" = "0" -o "$1" = "0" -o "$1" = "90"  -o "$1" = "180" -o "$1" = "270" -o "$2" = "0" -o "$2" = "90"  -o "$2" = "180" -o "$2" = "270" -o "$1" = "lite" -o "$2" = "lite" ; then
-sudo reboot
-echo "reboot now"
+read -p "Reboot now? [yn] " choice
+case "$choice" in 
+  y )
+	echo "Rebooting now...";
+	sudo reboot;;
+  n|* )
+	echo "Please reboot manually";;
+esac
 else
 echo "Invalid parameter,Usage:LCD35-show [0] [90] [180] [270] [lite]"
 fi
