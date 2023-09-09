@@ -1,0 +1,39 @@
+#!/usr/bin/bash
+
+function askReboot {
+	read -p "Reboot now? [yn] " choice
+	case "$choice" in 
+		y )
+			echo "Rebooting now...";
+			sudo reboot;
+			;;
+		n|* )
+			echo "Please reboot manually";
+			;;
+	esac
+}
+
+case "$1" in
+	"lcd"|"on"|"activate")
+		echo "Activating DSI LCD screen and deactivating HDMI output...";
+		if [ -n "$(tail -n1 /boot/config.txt)" ]; then
+			echo "" | sudo tee -a /boot/config.txt;
+		fi
+		sudo bash -c 'echo "# activate DSI LCD screen" >> /boot/config.txt';
+		sudo bash -c 'echo "dtoverlay=vc4-kms-v3d" >>/boot/config.txt';
+		sudo bash -c 'echo "dtoverlay=vc4-kms-dsi-7inch" >> /boot/config.txt';
+		askReboot;
+		;;
+	"hdmi"|"off"|"deactivate")
+		echo "Deactivating DSI LCD screen and activating HDMI output...";
+		sudo sed -i '/# activate DSI LCD screen/,/dtoverlay=vc4-kms-dsi-7inch/d' /boot/config.txt;
+		askReboot;
+		;;
+	*)
+		echo "Usage: $(basename $0) <param>";
+		echo "Please use one of the following parameters:";
+		echo -e "\tlcd, on, activate:\tactivate LCD screen and deactivate HDMI output";
+		echo -e "\thdmi, off, deactivate:\tdeactivate LCD screen and activate HDMI output";
+		;;
+esac
+
